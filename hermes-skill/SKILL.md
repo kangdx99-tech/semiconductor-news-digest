@@ -74,12 +74,31 @@ shell 单行拼凭证被安全门拦成 `pending_approval`、工具调用预算�
 |---|---|
 | `run.py` | 入口，五步流水线 |
 | `semidigest/prompt.py` | ⭐ 提示词，日报质量的真正来源，改风格改这里 |
-| `semidigest/collector.py` | RSS/Atom 解析、时间窗（周一自动 72h）、去重 |
+| `semidigest/collector.py` | RSS/Atom 解析、时间窗（周一自动 72h）、去重、关键词预过滤 |
 | `semidigest/verifier.py` | 链接校验：HEAD→GET，403 算可达，网络错重试 1 次 |
 | `semidigest/renderer.py` | 链接白名单审计：非白名单 URL 整块丢弃 |
 | `semidigest/feishu_blocks.py` | markdown → 飞书 block，index=0 只增不删 |
 | `config.yaml` | 源、模型、推送渠道（从 `config.example.yaml` 复制） |
 | `.env` | 密钥（`DEEPSEEK_API_KEY` / `FEISHU_APP_ID` / `FEISHU_APP_SECRET` …） |
+
+## 混合类源必须标 filter: true
+
+综合科技媒体（IT之家、cnBeta、The Register、Tom's Hardware…）里半导体内容只占一小部分。
+不标 `filter: true` 的话，模型一定会写出"苹果市值破 5 万亿""Grok Voice 发布"
+这类跟芯片无关的条目 —— 这是实测踩过的坑，详见 `collect.keyword_filter`。
+
+排查这条时先看 `[源] xxx 17 条（关键词过滤掉 43 条）` 这类日志：
+过滤比例异常高说明关键词表太窄，异常低说明该给这个源加 `filter: true`。
+
+## 渠道自检（比等定时任务快）
+
+```bash
+python3 scripts/check_channels.py --create-test-doc   # 飞书：建临时文档测完自动删
+python3 scripts/check_channels.py --channel telegram
+```
+
+飞书删除临时文档需要应用有 `drive:drive` 或 `space:document:delete` 权限，
+没有的话脚本会打印手动删除链接。
 
 ## 排查顺序
 
