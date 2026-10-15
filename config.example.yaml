@@ -1,0 +1,204 @@
+# ═══════════════════════════════════════════════════════════════
+# 半导体新闻日报 · 配置模板
+#
+# 用法：cp config.example.yaml config.yaml  然后按需改。
+# 密钥一律写在 .env 里，不要写进这个文件（config.yaml 已被 .gitignore 忽略，
+# 但把密钥集中在 .env 更不容易出事）。
+# ═══════════════════════════════════════════════════════════════
+
+# ── 大模型：任何 OpenAI 兼容接口 ────────────────────────────────
+llm:
+  base_url: https://api.deepseek.com/v1   # OpenAI: https://api.openai.com/v1
+  model: deepseek-chat                    # OpenAI: gpt-4o-mini 等
+  api_key_env: DEEPSEEK_API_KEY           # 到 .env 里找这个变量名
+  temperature: 0.4
+  max_tokens: 4000
+  timeout: 180
+  retries: 3
+
+# ── 日报本身 ──────────────────────────────────────────────────
+digest:
+  title: 半导体新闻日报
+  timezone: Asia/Shanghai
+  window_hours: 24          # 默认采集过去 24 小时
+  monday_window_hours: 72   # 周一自动放宽到 3 天（周末几乎不发新闻，不然日报会空）
+  max_items: 12             # 最多几条；宁可少而扎实
+  # extra_instructions: 今天重点关注 HBM 和先进封装   # 临时加要求可以写这里
+
+# ── 采集 ─────────────────────────────────────────────────────
+collect:
+  timeout: 20
+  workers: 8          # 并发抓取线程数
+  max_per_source: 15  # 单个源最多取多少条，防止某个源刷屏
+
+  # 关键词白名单：只对下面标了 `filter: true` 的源生效。
+  # 原因：综合科技媒体里半导体内容只占一小部分，不预过滤的话大模型会被带偏，
+  # 写出"苹果市值破 5 万亿"这类条目。垂直媒体的源不要标 filter。
+  keyword_filter:
+    # 中文
+    - 半导体
+    - 芯片
+    - 晶圆
+    - 制程
+    - 代工
+    - 封装
+    - 光刻
+    - 刻蚀
+    - 蚀刻
+    - 存储
+    - 内存
+    - 闪存
+    - 算力
+    - 数据中心
+    - 台积电
+    - 中芯
+    - 华虹
+    - 长鑫
+    - 长江存储
+    - 英伟达
+    - 高通
+    - 联发科
+    - 英特尔
+    - 三星电子
+    - 产能
+    # 英文
+    - semiconductor
+    - silicon
+    - wafer
+    - foundry
+    - " fab "
+    - lithography
+    - etching
+    - packaging
+    - chiplet
+    - transistor
+    - DRAM
+    - NAND
+    - HBM
+    - EUV
+    - TSMC
+    - Samsung
+    - Intel
+    - NVIDIA
+    - AMD
+    - ASML
+    - Micron
+    - "SK Hynix"
+    - Kioxia
+    - GlobalFoundries
+    - "process node"
+    - EDA
+    - RISC-V
+
+# ── 链接校验 ──────────────────────────────────────────────────
+verify:
+  enabled: true
+  timeout: 15
+  workers: 12
+  retries: 1         # 网络类失败（超时/DNS）重试一次；瞬时抖动很常见
+  accept_403: true   # 403 视为「可达但反爬」（很多媒体对脚本请求返回 403）
+
+# ── 采集源（updated 2026-10，全部实测可用）────────────────────
+sources:
+  # 半导体垂直媒体
+  - name: SemiEngineering
+    url: https://semiengineering.com/feed/
+  - name: EETimes
+    url: https://www.eetimes.com/feed/
+  - name: EE Times Asia
+    url: https://www.eetasia.com/feed/
+  - name: EE News Europe
+    url: https://www.eenewseurope.com/en/feed/
+  - name: SemiWiki
+    url: https://semiwiki.com/feed/
+  - name: EEJournal
+    url: https://www.eejournal.com/feed/
+  - name: Semiconductor Digest
+    url: https://www.semiconductor-digest.com/feed/
+  - name: Semiconductor Today
+    url: https://www.semiconductor-today.com/rss/news.xml
+  - name: DigiTimes
+    url: https://www.digitimes.com/rss/daily.xml
+  - name: Blocks & Files
+    url: https://blocksandfiles.com/feed/
+  - name: Electronic Design
+    url: https://www.electronicdesign.com/rss.xml
+
+  # 综合科技媒体 —— 必须标 filter: true（半导体内容只占一小部分）
+  - name: Tom's Hardware
+    url: https://www.tomshardware.com/feeds/all
+    filter: true
+  - name: TechPowerUp
+    url: https://www.techpowerup.com/rss/news
+    filter: true
+  - name: The Register
+    url: https://www.theregister.com/headlines.atom
+    filter: true
+  - name: Ars Technica
+    url: https://feeds.arstechnica.com/arstechnica/index
+    filter: true
+  - name: TechCrunch
+    url: https://techcrunch.com/feed/
+    filter: true
+  - name: HPCwire
+    url: https://www.hpcwire.com/feed/
+    filter: true
+
+  # 中文源 —— 同样需要过滤
+  - name: IT之家
+    url: https://www.ithome.com/rss/
+    filter: true
+  - name: cnBeta
+    url: https://www.cnbeta.com.tw/backend.php
+    filter: true
+  - name: Solidot
+    url: https://www.solidot.org/index.rss
+    filter: true
+
+# ── 关键词搜索（可选，用 Google News RSS）─────────────────────
+# ⚠️ Google News 给的是跳转链接（news.google.com/rss/articles/…），不能当原文链接用。
+#    本项目的处理方式：搜索结果只把「标题」当作选题提示喂给模型，链接不进正文。
+#    想要更多直接可引用的源，优先往上面的 sources 里加 RSS。
+searches:
+  - q: semiconductor chip news
+    name: 搜索·英文半导体
+  - q: 半导体 芯片
+    name: 搜索·中文半导体
+    hl: zh-CN
+    gl: CN
+    ceid: CN:zh-Hans
+  - q: TSMC Samsung foundry advanced packaging
+    name: 搜索·代工与封装
+
+# ── 推送渠道（可同时开多个，按顺序执行）──────────────────────
+deliver:
+  # 1) 本地 markdown，永远可用，建议保留（也是唯一在 --dry-run 下仍会执行的渠道）
+  - type: local_md
+    dir: ./output
+    filename: "{date}.md"
+    keep_history: true   # 额外按时间戳归档到 output/history/
+
+  # 2) 飞书：写入云文档最开头（只增不删）+ 可选推送到群/单聊
+  # - type: feishu
+  #   app_id_env: FEISHU_APP_ID
+  #   app_secret_env: FEISHU_APP_SECRET
+  #   doc_token: ""              # 云文档 token，从文档 URL 里取最后一段
+  #   write_doc: true            # 插到 index=0，绝不删除历史内容
+  #   verify: true               # 写完回读文档开头自检
+  #   chat_id: ""                # oc_ 开头；填了就同时推聊天
+  #   push_chat: true
+
+  # 3) Telegram
+  # - type: telegram
+  #   bot_token_env: TELEGRAM_BOT_TOKEN
+  #   chat_id: ""
+
+  # 4) 邮件
+  # - type: email
+  #   smtp_host: smtp.qq.com
+  #   smtp_port: 465
+  #   user_env: SMTP_USER
+  #   pass_env: SMTP_PASS
+  #   to: [you@example.com]
+  #   subject: "{date} {title}"
+  #   attach_markdown: true
