@@ -41,7 +41,7 @@ RSS 阅读器的活是**把文章推给你**；这个项目的活是**替你读�
 ## 60 秒上手
 
 ```bash
-git clone https://github.com/<you>/semiconductor-news-digest.git
+git clone https://github.com/kangdx99-tech/semiconductor-news-digest.git
 cd semiconductor-news-digest
 
 pip install -r requirements.txt
